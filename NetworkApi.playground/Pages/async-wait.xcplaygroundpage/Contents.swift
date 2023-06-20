@@ -10,14 +10,13 @@ PlaygroundPage.current.needsIndefiniteExecution = true
 
 protocol ShopAPI {
 
-  func fetchWith(completion: @escaping ([String]) -> Void) async
+  func fetchNames() async -> [String]
 
-  func getCountOfProductsAsync(completion: (Int) -> Void)
+  func getCountOfProductsAsync() async -> Int
 
 }
 
 class ShopManager {
-
   let api: ShopAPI
 
   init(api: ShopAPI) {
@@ -27,34 +26,25 @@ class ShopManager {
   func makeStatisticAsync() async -> [String: Int] {
     var shopDict = [String: Int]()
 
-    let taskGroup = DispatchGroup()
-
-    taskGroup.enter()
-    await api.fetchWith { names in
-      for name in names {
-        self.api.getCountOfProductsAsync { shopCount in
-          shopDict[name] = shopCount
-        }
-      }
-      taskGroup.leave()
+    let names = await api.fetchNames()
+    for name in names {
+      let count = await api.getCountOfProductsAsync()
+      shopDict[name] = count
     }
-
-    taskGroup.wait() // TODO: Use a TaskGroup instead
 
     return shopDict
   }
-
 }
 
 class Api: ShopAPI {
-  func fetchWith(completion: @escaping ([String]) -> Void) async {
-    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-      completion(["One", "Two", "Three"])
-    }
+  func fetchNames() async -> [String] {
+    sleep(1)
+    return ["One", "Two", "Three"]
   }
 
-  func getCountOfProductsAsync(completion: (Int) -> Void) { // TODO: make async
-      completion(Int.random(in: 0...100))
+  func getCountOfProductsAsync() async -> Int {
+    sleep(1)
+    return Int.random(in: 0...100)
   }
 }
 
