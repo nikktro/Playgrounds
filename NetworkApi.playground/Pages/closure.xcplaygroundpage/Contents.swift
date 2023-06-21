@@ -1,6 +1,12 @@
 //: [Previous](@previous)
 
 import Foundation
+import _Concurrency
+import PlaygroundSupport
+
+PlaygroundPage.current.needsIndefiniteExecution = true
+
+
 
 protocol ShopAPI {
 
@@ -10,15 +16,16 @@ protocol ShopAPI {
 
 }
 
-class ShopManager {
+final class ShopManager {
 
-  let api: ShopAPI
+  private let api: ShopAPI
 
   init(api: ShopAPI) {
     self.api = api
   }
 
   func makeStatistic(completion: @escaping ([String: Int]) -> Void) {
+    let startTime = CFAbsoluteTimeGetCurrent()
     var shopDict = [String: Int]()
 
     let utilityQueue = DispatchQueue.global(qos: .utility)
@@ -37,16 +44,18 @@ class ShopManager {
 
         countOfProductsGroup.notify(queue: utilityQueue) {
           completion(shopDict)
+          print("Fetch took \(CFAbsoluteTimeGetCurrent() - startTime) seconds")
         }
       }
     }
   }
 }
 
-class Api: ShopAPI {
+final class Api: ShopAPI {
   func fetchWith(completion: @escaping([String]) -> Void) {
     DispatchQueue.global().async {
-      sleep(UInt32.random(in: 1...3))
+      let random = Int.random(in: 1...3)
+      sleep(UInt32(random))
       completion(["One", "Two", "Three"])
     }
   }
