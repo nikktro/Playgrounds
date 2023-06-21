@@ -1,12 +1,18 @@
 //: [Previous](@previous)
 
 import Foundation
+import _Concurrency
+import PlaygroundSupport
+
+PlaygroundPage.current.needsIndefiniteExecution = true
+
+
 
 protocol ShopAPI {
 
   func fetchWith(completion: ([String]) -> Void)
 
-  func getCountOfProductsAsync(completion: (Int) -> Void)
+  func getCountOfProducts(for name: String, completion: (Int) -> Void)
 
 }
 
@@ -26,7 +32,7 @@ class ShopManager {
     taskGroup.enter()
     api.fetchWith { names in
       for name in names {
-        api.getCountOfProductsAsync { shopCount in
+        api.getCountOfProducts(for: name) { shopCount in
           shopDict[name] = shopCount
         }
       }

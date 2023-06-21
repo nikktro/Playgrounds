@@ -12,7 +12,7 @@ protocol ShopAPI {
 
   func fetchWith(completion: @escaping ([String]) -> Void)
 
-  func getCountOfProductsAsync(completion: @escaping(Int) -> Void)
+  func getCountOfProducts(for name: String, completion: @escaping(Int) -> Void)
 
 }
 
@@ -36,7 +36,7 @@ final class ShopManager {
 
         for name in names {
           countOfProductsGroup.enter()
-          self.api.getCountOfProductsAsync { count in
+          self.api.getCountOfProducts(for: name) { count in
             shopDict[name] = count
             countOfProductsGroup.leave()
           }
@@ -60,7 +60,7 @@ final class Api: ShopAPI {
     }
   }
 
-  func getCountOfProductsAsync(completion: @escaping(Int) -> Void) {
+  func getCountOfProducts(for name: String, completion: @escaping(Int) -> Void) {
     DispatchQueue.global().async {
       let random = Int.random(in: 1...5)
       sleep(UInt32(random))

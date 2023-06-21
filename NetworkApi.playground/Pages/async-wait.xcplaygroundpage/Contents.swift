@@ -12,7 +12,7 @@ protocol ShopAPI {
 
   func fetchShopNames() async -> [String]
 
-  func getCountOfProductsAsync(for name: String) async -> Int
+  func getCountOfProducts(for name: String) async -> Int
 
 }
 
@@ -31,7 +31,7 @@ final class ShopManager {
 
     return await withTaskGroup(of: Int.self) { group in
       for name in names {
-        group.addTask { await self.api.getCountOfProductsAsync(for: name) }
+        group.addTask { await self.api.getCountOfProducts(for: name) }
       }
 
       for await count in group {
@@ -52,7 +52,7 @@ final class Api: ShopAPI {
     return ["One", "Two", "Three"]
   }
 
-  func getCountOfProductsAsync(for name: String) async -> Int {
+  func getCountOfProducts(for name: String) async -> Int {
     let random = Int.random(in: 1...5)
     sleep(UInt32(random))
     return random
