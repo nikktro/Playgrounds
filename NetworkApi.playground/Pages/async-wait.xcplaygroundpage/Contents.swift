@@ -10,14 +10,14 @@ PlaygroundPage.current.needsIndefiniteExecution = true
 
 protocol ShopAPI {
 
-  func fetchNames() async -> [String]
+  func fetchShopNames() async -> [String]
 
-  func getCountOfProductsAsync() async -> Int
+  func getCountOfProductsAsync(for name: String) async -> Int
 
 }
 
-class ShopManager {
-  let api: ShopAPI
+final class ShopManager {
+  private let api: ShopAPI
 
   init(api: ShopAPI) {
     self.api = api
@@ -25,44 +25,50 @@ class ShopManager {
 
   func makeStatisticAsync() async -> [String: Int] {
     var shopDict = [String: Int]()
+    var nameIndex = 0
 
-    let names = await api.fetchNames()
-    for name in names {
-      let count = await api.getCountOfProductsAsync()
-      shopDict[name] = count
+    let names = await api.fetchShopNames()
+
+    return await withTaskGroup(of: Int.self) { group in
+      for name in names {
+        group.addTask { await self.api.getCountOfProductsAsync(for: name) }
+      }
+
+      for await count in group {
+        shopDict[names[nameIndex]] = count
+        nameIndex += 1
+      }
+
+      return shopDict
     }
-
-    return shopDict
   }
+
 }
 
-class Api: ShopAPI {
-  func fetchNames() async -> [String] {
-    sleep(1)
+final class Api: ShopAPI {
+  func fetchShopNames() async -> [String] {
+    let random = Int.random(in: 1...3)
+    sleep(UInt32(random))
     return ["One", "Two", "Three"]
   }
 
-  func getCountOfProductsAsync() async -> Int {
-    sleep(1)
-    return Int.random(in: 0...100)
+  func getCountOfProductsAsync(for name: String) async -> Int {
+    let random = Int.random(in: 1...5)
+    sleep(UInt32(random))
+    return random
   }
 }
 
-
 // instantiation api
-let api = Api()
-let shopManager = ShopManager(api: api)
-
-// solution with deprecated async (is deprecated)
-async {
-  let result = await shopManager.makeStatisticAsync()
-  print(result)
-}
+private let api = Api()
+private let shopManager = ShopManager(api: api)
 
 // solution with Task
 Task {
+  let startTime = CFAbsoluteTimeGetCurrent()
   let result = await shopManager.makeStatisticAsync()
   print(result)
+  print("Fetch took \(CFAbsoluteTimeGetCurrent() - startTime) seconds")
 }
 
 //: [Next](@next)
