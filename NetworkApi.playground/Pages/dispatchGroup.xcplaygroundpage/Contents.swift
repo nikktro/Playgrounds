@@ -10,15 +10,15 @@ PlaygroundPage.current.needsIndefiniteExecution = true
 
 protocol ShopAPI {
 
-  func fetchWith(completion: ([String]) -> Void)
+  func fetchWith(completion: @escaping ([String]) -> Void)
 
-  func getCountOfProducts(for name: String, completion: (Int) -> Void)
+  func getCountOfProducts(for name: String, completion: @escaping(Int) -> Void)
 
 }
 
-class ShopManager {
+final class ShopManager {
 
-  let api: ShopAPI
+  private let api: ShopAPI
 
   init(api: ShopAPI) {
     self.api = api
@@ -26,24 +26,56 @@ class ShopManager {
 
   func makeStatisticWithGroup() -> [String: Int] {
     var shopDict = [String: Int]()
+    let taskGroupFetchNames = DispatchGroup()
+    let taskGroupFetchCount = DispatchGroup()
 
-    let taskGroup = DispatchGroup()
-
-    taskGroup.enter()
+    taskGroupFetchNames.enter()
     api.fetchWith { names in
+
       for name in names {
-        api.getCountOfProducts(for: name) { shopCount in
+        taskGroupFetchCount.enter()
+        self.api.getCountOfProducts(for: name) { shopCount in
           shopDict[name] = shopCount
+          taskGroupFetchCount.leave()
         }
       }
-      taskGroup.leave()
+
+      taskGroupFetchNames.leave()
     }
 
-    taskGroup.wait()
+    taskGroupFetchNames.wait()
+    taskGroupFetchCount.wait()
 
     return shopDict
   }
-
 }
+
+final class Api: ShopAPI {
+  func fetchWith(completion: @escaping([String]) -> Void) {
+    DispatchQueue.global().async {
+      let random = Int.random(in: 1...3)
+      sleep(UInt32(random))
+      completion(["One", "Two", "Three"])
+    }
+  }
+
+  func getCountOfProducts(for name: String, completion: @escaping(Int) -> Void) {
+    DispatchQueue.global().async {
+      let random = Int.random(in: 1...5)
+      sleep(UInt32(random))
+      completion(random)
+    }
+  }
+}
+
+// instantiation api
+let api = Api()
+let shopManager = ShopManager(api: api)
+
+// solution closure
+let startTime = Date()
+let result = shopManager.makeStatisticWithGroup()
+print(result)
+print("Fetch took \(Date().timeIntervalSince(startTime)) seconds")
 
 //: [Next](@next)
